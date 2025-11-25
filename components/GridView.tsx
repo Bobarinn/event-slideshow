@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import { Event } from '@/data/events';
 
 interface GridViewProps {
@@ -13,6 +14,107 @@ interface GridViewProps {
 
 type SortOption = 'index' | 'alphabetical' | 'difficulty';
 type SortOrder = 'asc' | 'desc';
+
+interface GridItemProps {
+  event: Event;
+  index: number;
+  isCurrent: boolean;
+  difficulty: { bg: string; text: string };
+  imagePath: string;
+  imagePathPng: string;
+  itemVariants: any;
+  onSelectSlide: () => void;
+}
+
+function GridItem({
+  event,
+  index,
+  isCurrent,
+  difficulty,
+  imagePath,
+  imagePathPng,
+  itemVariants,
+  onSelectSlide,
+}: GridItemProps) {
+  const [imageSrc, setImageSrc] = useState(imagePath);
+  const [imageError, setImageError] = useState(false);
+
+  return (
+    <motion.button
+      key={`${event.id}-${index}`}
+      variants={itemVariants}
+      onClick={onSelectSlide}
+      className={`relative group text-left focus:outline-none focus:ring-2 focus:ring-white/50 rounded-2xl overflow-hidden transition-all duration-300 ${
+        isCurrent
+          ? 'ring-4 ring-white/50 shadow-2xl scale-[1.02]'
+          : 'hover:scale-[1.02] hover:shadow-2xl'
+      }`}
+      aria-label={`View ${event.title}`}
+    >
+      {/* Image Container */}
+      <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-gray-800 to-gray-900 overflow-hidden">
+        {!imageError && (
+          <Image
+            src={imageSrc}
+            alt={event.title}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-110"
+            onError={() => {
+              // Try PNG if JPG fails
+              if (imageSrc === imagePath) {
+                setImageSrc(imagePathPng);
+              } else {
+                // Both failed
+                setImageError(true);
+              }
+            }}
+          />
+        )}
+
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
+
+        {/* Current Indicator */}
+        {isCurrent && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="absolute top-4 left-4 z-20 px-3 py-1 bg-gradient-to-r from-blue-500 to-cyan-500 backdrop-blur-md rounded-full border border-white/30 shadow-lg"
+          >
+            <span className="text-white text-xs font-bold">Current</span>
+          </motion.div>
+        )}
+
+        {/* Event Number */}
+        <div className="absolute top-4 right-4 z-20 px-3 py-1 bg-black/50 backdrop-blur-md rounded-full border border-white/20">
+          <span className="text-white text-sm font-bold">#{event.id}</span>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/95 to-transparent z-10">
+        <h3 className="text-white font-bold text-lg mb-1 line-clamp-2 group-hover:text-white transition-colors">
+          {event.title}
+        </h3>
+        <p className="text-white/70 text-sm line-clamp-2 mb-3">
+          {event.description}
+        </p>
+
+        {/* Difficulty Badge - Moved here to be above content */}
+        <div className="relative z-20 inline-block">
+          <span
+            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${difficulty.bg} ${difficulty.text} shadow-lg`}
+          >
+            {event.difficultyLabel}
+          </span>
+        </div>
+      </div>
+
+      {/* Hover Overlay */}
+      <div className="absolute inset-0 bg-white/0 group-hover:bg-white/5 transition-all duration-300" />
+    </motion.button>
+  );
+}
 
 export default function GridView({
   events,
@@ -225,85 +327,20 @@ export default function GridView({
               const isCurrent = index === currentIndex;
 
               return (
-                <motion.button
+                <GridItem
                   key={`${event.id}-${index}`}
-                  variants={itemVariants}
-                  onClick={() => {
+                  event={event}
+                  index={index}
+                  isCurrent={isCurrent}
+                  difficulty={difficulty}
+                  imagePath={imagePath}
+                  imagePathPng={imagePathPng}
+                  itemVariants={itemVariants}
+                  onSelectSlide={() => {
                     onSelectSlide(index);
                     onClose();
                   }}
-                  className={`relative group text-left focus:outline-none focus:ring-2 focus:ring-white/50 rounded-2xl overflow-hidden transition-all duration-300 ${
-                    isCurrent
-                      ? 'ring-4 ring-white/50 shadow-2xl scale-[1.02]'
-                      : 'hover:scale-[1.02] hover:shadow-2xl'
-                  }`}
-                  aria-label={`View ${event.title}`}
-                >
-                  {/* Image Container */}
-                  <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-gray-800 to-gray-900 overflow-hidden">
-                    <img
-                      src={imagePath}
-                      alt={event.title}
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        if (!target.src.includes('.png')) {
-                          target.src = imagePathPng;
-                          target.onerror = () => {
-                            target.style.display = 'none';
-                          };
-                        } else {
-                          target.style.display = 'none';
-                        }
-                      }}
-                    />
-
-                    {/* Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
-
-                    {/* Current Indicator */}
-                    {isCurrent && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="absolute top-4 left-4 z-20 px-3 py-1 bg-gradient-to-r from-blue-500 to-cyan-500 backdrop-blur-md rounded-full border border-white/30 shadow-lg"
-                      >
-                        <span className="text-white text-xs font-bold">
-                          Current
-                        </span>
-                      </motion.div>
-                    )}
-
-                    {/* Event Number */}
-                    <div className="absolute top-4 right-4 z-20 px-3 py-1 bg-black/50 backdrop-blur-md rounded-full border border-white/20">
-                      <span className="text-white text-sm font-bold">
-                        #{event.id}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Content */}
-                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/95 to-transparent z-10">
-                    <h3 className="text-white font-bold text-lg mb-1 line-clamp-2 group-hover:text-white transition-colors">
-                      {event.title}
-                    </h3>
-                    <p className="text-white/70 text-sm line-clamp-2 mb-3">
-                      {event.description}
-                    </p>
-                    
-                    {/* Difficulty Badge - Moved here to be above content */}
-                    <div className="relative z-20 inline-block">
-                      <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${difficulty.bg} ${difficulty.text} shadow-lg`}
-                      >
-                        {event.difficultyLabel}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Hover Overlay */}
-                  <div className="absolute inset-0 bg-white/0 group-hover:bg-white/5 transition-all duration-300" />
-                </motion.button>
+                />
               );
             })}
           </motion.div>

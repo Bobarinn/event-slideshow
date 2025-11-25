@@ -1,7 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Event } from '@/data/events';
 
 interface EventSlideProps {
@@ -62,7 +63,7 @@ export default function EventSlide({ event, index }: EventSlideProps) {
   const [mounted, setMounted] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const imgRef = useRef<HTMLImageElement>(null);
+  const [currentImageSrc, setCurrentImageSrc] = useState<string>('');
   const palette = colorPalettes[index % colorPalettes.length];
   const difficulty = difficultyColors[event.difficulty];
   const imagePath = `/event-images/${event.id}.jpg`;
@@ -73,27 +74,8 @@ export default function EventSlide({ event, index }: EventSlideProps) {
     // Reset image state when event changes
     setImageError(false);
     setImageLoaded(false);
-  }, [event.id]);
-
-  // Check if image is already complete (cached) after render
-  useEffect(() => {
-    const checkImageComplete = () => {
-      if (imgRef.current) {
-        if (imgRef.current.complete && imgRef.current.naturalHeight !== 0) {
-          setImageLoaded(true);
-          setImageError(false);
-        }
-      }
-    };
-
-    // Check immediately
-    checkImageComplete();
-    
-    // Also check after a short delay to catch images that load very quickly
-    const timeout = setTimeout(checkImageComplete, 100);
-    
-    return () => clearTimeout(timeout);
-  }, [event.id]);
+    setCurrentImageSrc(imagePathPng); // Start with PNG
+  }, [event.id, imagePathPng]);
 
   const slideVariants = {
     hidden: { opacity: 0, scale: 0.95 },
@@ -296,34 +278,32 @@ export default function EventSlide({ event, index }: EventSlideProps) {
             {/* Image Container with Fallback */}
             <div className="relative w-full h-full bg-gradient-to-br from-gray-800 to-gray-900">
               {/* Image */}
-              <img
-                ref={imgRef}
-                src={imagePathPng}
-                alt={event.title}
-                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:scale-110 ${
-                  imageLoaded && !imageError ? 'opacity-100' : 'opacity-0'
-                }`}
-                onLoad={() => {
-                  setImageLoaded(true);
-                  setImageError(false);
-                }}
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  if (!target.src.includes('.jpg')) {
+              {currentImageSrc && !imageError && (
+                <Image
+                  src={currentImageSrc}
+                  alt={event.title}
+                  fill
+                  className={`object-cover transition-opacity duration-500 group-hover:scale-110 ${
+                    imageLoaded ? 'opacity-100' : 'opacity-0'
+                  }`}
+                  onLoad={() => {
+                    setImageLoaded(true);
+                    setImageError(false);
+                  }}
+                  onError={() => {
                     // Try JPG if PNG fails
-                    target.src = imagePath;
-                    target.onerror = () => {
+                    if (currentImageSrc === imagePathPng) {
+                      setCurrentImageSrc(imagePath);
+                      setImageLoaded(false);
+                    } else {
+                      // Both failed
                       setImageError(true);
                       setImageLoaded(false);
-                    };
-                  } else {
-                    // Both failed
-                    setImageError(true);
-                    setImageLoaded(false);
-                  }
-                }}
-                loading="eager"
-              />
+                    }
+                  }}
+                  priority
+                />
+              )}
               
               {/* Placeholder when image is missing */}
               {imageError && (

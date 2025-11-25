@@ -18,6 +18,7 @@ A stunning, full-screen presentation slideshow for Creative Media Department eve
 - 📋 **Grid View** - View all slides at once with sorting options (index, alphabetical, difficulty)
 - 🎯 **Auto-Hide Controls** - Navigation controls automatically hide after 5 seconds of inactivity
 - 🖱️ **Click to View All** - Click anywhere on a slide to open the grid view
+- 🧪 **Experimental Editor** - Visit `/editor` to try the AI-assisted slide builder MVP
 
 ## Getting Started
 
@@ -59,6 +60,7 @@ npm start
 ## Navigation
 
 - **Arrow Right / Down**: Next slide
+- `/editor` – AI-powered slide builder MVP (new)
 - **Arrow Left / Up**: Previous slide
 - **F Key**: Toggle fullscreen
 - **Escape**: Exit fullscreen
